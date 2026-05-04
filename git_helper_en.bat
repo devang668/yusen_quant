@@ -103,6 +103,13 @@ cd /d "!GIT_ROOT!"
 echo.
 echo Executing: git push (in !GIT_ROOT!)
 git push
+if errorlevel 1 (
+    echo.
+    echo Push failed, retrying with proxy...
+    git config --local http.proxy "socks5://127.0.0.1:7890"
+    git config --local https.proxy "socks5://127.0.0.1:7890"
+    git push
+)
 echo.
 pause
 goto MainMenu
