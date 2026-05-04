@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>钱包管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #0f0f0f; color: white; min-height: 100vh; }
+        .container { max-width: 1300px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid #333; margin-bottom: 20px; }
+        .header h1 { color: #26a69a; font-size: 22px; }
+        .market { text-align: right; }
+        .market .price { font-size: 24px; color: #f0b90b; font-weight: bold; }
+        .market .label { font-size: 12px; color: #888; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #26a69a; color: white; }
+        .btn-primary:hover { background: #2bb3a0; }
+        .btn-warning { background: #f0b90b; color: #000; }
+        .btn-danger { background: #ef5350; color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 8px; }
+        .tab { padding: 8px 16px; background: #252525; border-radius: 4px; cursor: pointer; color: #888; font-size: 14px; }
+        .tab.active { background: #26a69a; color: white; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; }
+        .wallet-card { background: #1e1e1e; border-radius: 8px; padding: 16px; border: 1px solid #333; cursor: pointer; transition: all 0.2s; }
+        .wallet-card:hover { border-color: #26a69a; transform: translateY(-2px); }
+        .wallet-card.selected { border-color: #26a69a; background: #1a2a25; }
+        .wallet-card .top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .wallet-card .addr { font-family: monospace; font-size: 11px; color: #888; word-break: break-all; flex: 1; }
+        .wallet-card .del-btn { background: none; border: none; color: #ef5350; cursor: pointer; font-size: 16px; padding: 0 4px; opacity: 0.5; }
+        .wallet-card .del-btn:hover { opacity: 1; }
+        .wallet-card .bal { margin: 6px 0; font-size: 15px; }
+        .wallet-card .usdt { color: #26a69a; }
+        .wallet-card .eth { color: #f0b90b; }
+        .wallet-card .total { color: #ccc; font-size: 12px; margin-top: 8px; }
+        .wallet-card .file-hint { font-size: 10px; color: #555; margin-top: 5px; font-family: monospace; }
+        .panel { background: #1e1e1e; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .panel h3 { margin-bottom: 15px; color: #ccc; border-bottom: 1px solid #333; padding-bottom: 10px; font-size: 14px; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .detail-item { background: #252525; padding: 12px; border-radius: 6px; }
+        .detail-item label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; }
+        .detail-item .value { font-size: 18px; font-weight: bold; }
+        .detail-item .usdt-val { color: #26a69a; }
+        .detail-item .eth-val { color: #f0b90b; }
+        .detail-item .total-val { color: #ccc; }
+        .trade-row { display: flex; gap: 10px; margin: 8px 0; align-items: center; }
+        .trade-row label { color: #888; font-size: 13px; min-width: 80px; }
+        .trade-row input { flex: 1; padding: 8px; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; color: white; font-size: 14px; }
+        .detail-actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .detail-actions .file-info { font-size: 11px; color: #555; font-family: monospace; margin-left: auto; align-self: center; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 8px 10px; text-align: center; border-bottom: 1px solid #333; }
+        th { background: #252525; color: #888; font-weight: normal; }
+        .up { color: #26a69a; }
+        .down { color: #ef5350; }
+        .addr-link { font-family: monospace; font-size: 11px; color: #26a69a; cursor: pointer; }
+        .addr-link:hover { text-decoration: underline; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: #1e1e1e; padding: 30px; border-radius: 8px; max-width: 520px; width: 90%; }
+        .modal-content h3 { margin-bottom: 10px; color: #26a69a; }
+        .modal-content p { color: #888; font-size: 13px; margin-bottom: 10px; }
+        .modal-content .info-box { background: #252525; padding: 12px; border-radius: 4px; margin: 8px 0; font-family: monospace; font-size: 12px; word-break: break-all; }
+        .modal-content .info-box.red { color: #ef5350; }
+        .modal-content .warn { color: #f0b90b; font-size: 12px; margin: 10px 0; }
+        .modal-content .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-content .btn-row .btn { flex: 1; text-align: center; }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #26a69a; color: white; padding: 12px 20px; border-radius: 6px; display: none; z-index: 200; font-size: 14px; }
+        .toast.error { background: #ef5350; }
+        .toast.show { display: block; }
+        .empty { text-align: center; color: #888; padding: 60px 0; font-size: 14px; }
+        .empty span { color: #26a69a; cursor: pointer; }
+        .empty span:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>钱包管理</h1>
+            <div class="market">
+                <div class="label">ETH/USDT</div>
+                <div class="price" id="ethPrice">--</div>
+            </div>
+        </div>
+
+        <div class="top-bar">
+            <div class="tabs">
+                <div class="tab active" onclick="showView('wallets')">钱包列表</div>
+                <div class="tab" onclick="showView('detail')">钱包详情</div>
+            </div>
+            <button class="btn btn-primary" onclick="createWallet()">+ 新建钱包</button>
+        </div>
+
+        <!-- 钱包列表 -->
+        <div id="view-wallets">
+            <div class="grid" id="walletList">加载中...</div>
+        </div>
+
+        <!-- 钱包详情 -->
+        <div id="view-detail" style="display:none">
+            <div class="panel" id="detailPanel" style="display:none">
+                <h3>
+                    钱包详情
+                    <span id="detailAddrShort" style="font-weight:normal;color:#888;font-size:12px;margin-left:10px"></span>
+                </h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>USDT 余额</label>
+                        <div class="value usdt-val" id="detailUsdt">--</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>ETH 余额</label>
+                        <div class="value eth-val" id="detailEth">--</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>ETH 当前价</label>
+                        <div class="value" id="detailPrice">--</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>总价值 (USDT)</label>
+                        <div class="value total-val" id="detailTotal">--</div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+                    <div>
+                        <label style="color:#888;font-size:13px">买入 ETH</label>
+                        <div class="trade-row">
+                            <label>花费 USDT</label>
+                            <input type="number" id="buyUsdt" placeholder="输入金额" step="0.01" min="0">
+                            <button class="btn btn-primary btn-sm" onclick="buyEth()">买入</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="color:#888;font-size:13px">卖出 ETH</label>
+                        <div class="trade-row">
+                            <label>卖出 ETH</label>
+                            <input type="number" id="sellEth" placeholder="输入数量" step="0.0001" min="0">
+                            <button class="btn btn-warning btn-sm" onclick="sellEth()">卖出</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:15px">
+                    <label style="color:#888;font-size:13px">转账 USDT</label>
+                    <div class="trade-row">
+                        <label>接收地址</label>
+                        <input type="text" id="transferTo" placeholder="0x..." style="flex:2">
+                        <input type="number" id="transferAmount" placeholder="金额" step="0.01" min="0">
+                        <button class="btn btn-primary btn-sm" onclick="doTransfer()">转账</button>
+                    </div>
+                </div>
+
+                <div class="detail-actions">
+                    <button class="btn btn-primary btn-sm" onclick="copyAddress()">复制地址</button>
+                    <button class="btn btn-primary btn-sm" onclick="viewJsonFile()">查看JSON文件</button>
+                    <span class="file-info" id="filePath"></span>
+                </div>
+
+                <h3 style="margin-top:20px">交易记录</h3>
+                <div style="max-height:300px;overflow-y:auto">
+                    <table id="txTable">
+                        <thead>
+                            <tr>
+                                <th>时间</th><th>类型</th><th>金额</th><th>价格</th><th>备注</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="empty" id="noWalletSelected">
+                从左侧选择一个钱包
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建钱包弹窗 -->
+    <div class="modal" id="newWalletModal">
+        <div class="modal-content">
+            <h3>新钱包已创建</h3>
+            <p>每个钱包保存为独立的 JSON 文件，请妥善保管私钥！</p>
+            <div class="info-box" id="newAddr"></div>
+            <div class="info-box red" id="newKey"></div>
+            <p class="warn">⚠️ 私钥仅显示这一次，请立即备份！</p>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="copyNewKey()">复制私钥</button>
+                <button class="btn" style="background:#333;color:#ccc" onclick="closeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON文件弹窗 -->
+    <div class="modal" id="jsonModal">
+        <div class="modal-content">
+            <h3>JSON 文件内容</h3>
+            <p id="jsonFileName" style="color:#888;font-size:12px;margin-bottom:10px"></p>
+            <div id="jsonContent" class="info-box" style="max-height:400px;overflow-y:auto;white-space:pre-wrap;font-size:11px"></div>
+            <div class="btn-row" style="margin-top:15px">
+                <button class="btn btn-primary" onclick="copyJson()">复制内容</button>
+                <button class="btn" style="background:#333;color:#ccc" onclick="document.getElementById('jsonModal').classList.remove('show')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let wallets = [];
+        let selectedAddr = null;
+        let currentPrice = 0;
+
+        function showView(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('view-wallets').style.display = name === 'wallets' ? 'block' : 'none';
+            document.getElementById('view-detail').style.display = name === 'detail' ? 'block' : 'none';
+        }
+
+        function toast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast' + (isError ? ' error' : '');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function loadWallets() {
+            fetch('/api/wallets').then(r => r.json()).then(data => {
+                wallets = data;
+                renderWallets();
+                updatePrice();
+            });
+        }
+
+        function updatePrice() {
+            fetch('/api/market/price').then(r => r.json()).then(d => {
+                currentPrice = parseFloat(d.price);
+                document.getElementById('ethPrice').textContent = '$' + d.price;
+                if (selectedAddr) loadWalletDetail(selectedAddr);
+            });
+        }
+
+        function renderWallets() {
+            const list = document.getElementById('walletList');
+            if (wallets.length === 0) {
+                list.innerHTML = `<div class="empty">暂无钱包 <span onclick="createWallet()">点击创建</span></div>`;
+                return;
+            }
+            list.innerHTML = wallets.map(w => `
+                <div class="wallet-card ${w.address === selectedAddr ? 'selected' : ''}" onclick="selectWallet('${w.address}')">
+                    <div class="top-row">
+                        <div class="addr">${w.address}</div>
+                        <button class="del-btn" onclick="event.stopPropagation();deleteWallet('${w.address}')" title="删除">×</button>
+                    </div>
+                    <div class="bal usdt">💰 ${w.usdt.toFixed(2)} USDT</div>
+                    <div class="bal eth">🅴 ${w.eth.toFixed(6)} ETH</div>
+                    <div class="total">总价值: $${w.total_value.toFixed(2)}</div>
+                    <div class="file-hint">${w.address}.json</div>
+                </div>
+            `).join('');
+        }
+
+        function selectWallet(addr) {
+            selectedAddr = addr;
+            showView('detail');
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            document.querySelectorAll('.tab')[0].classList.remove('active');
+            loadWalletDetail(addr);
+            renderWallets();
+        }
+
+        function loadWalletDetail(addr) {
+            fetch('/api/wallet/' + addr).then(r => r.json()).then(w => {
+                document.getElementById('detailPanel').style.display = 'block';
+                document.getElementById('noWalletSelected').style.display = 'none';
+                document.getElementById('detailAddrShort').textContent = '...' + addr.slice(-8);
+                document.getElementById('detailUsdt').textContent = w.usdt.toFixed(2) + ' USDT';
+                document.getElementById('detailEth').textContent = w.eth.toFixed(6) + ' ETH';
+                document.getElementById('detailPrice').textContent = '$' + currentPrice;
+                document.getElementById('detailTotal').textContent = '$' + w.total_value.toFixed(2);
+                document.getElementById('filePath').textContent = 'wallets/' + addr + '.json';
+
+                const txs = w.transactions || [];
+                const tbody = document.querySelector('#txTable tbody');
+                if (txs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="color:#888">暂无交易记录</td></tr>';
+                } else {
+                    tbody.innerHTML = txs.slice().reverse().map(t => {
+                        const typeMap = {BUY:'买入',SELL:'卖出',TRANSFER_IN:'转入',TRANSFER_OUT:'转出'};
+                        const typeClass = t.type === 'BUY' || t.type === 'TRANSFER_IN' ? 'up' : 'down';
+                        const extra = t.type === 'BUY' ? `花费 $${t.cost}` : t.type === 'SELL' ? `获得 $${t.earned}` : `→ ${(t.to||t.from||'').slice(0,10)}...`;
+                        return `<tr><td>${new Date(t.time).toLocaleString()}</td><td class="${typeClass}">${typeMap[t.type]||t.type}</td><td>${t.amount}</td><td>${t.price ? '$'+t.price : '-'}</td><td style="font-size:12px;color:#888">${extra}</td></tr>`;
+                    }).join('');
+                }
+            });
+        }
+
+        function createWallet() {
+            fetch('/api/wallet', { method: 'POST' }).then(r => r.json()).then(d => {
+                document.getElementById('newAddr').textContent = '地址: ' + d.address;
+                document.getElementById('newKey').textContent = '私钥: ' + d.private_key;
+                window._newKey = d.private_key;
+                document.getElementById('newWalletModal').classList.add('show');
+                loadWallets();
+            });
+        }
+
+        function copyNewKey() {
+            navigator.clipboard.writeText(window._newKey || '').then(() => toast('私钥已复制'));
+        }
+
+        function deleteWallet(addr) {
+            if (!confirm('确定删除该钱包？')) return;
+            fetch('/api/wallet/' + addr, { method: 'DELETE' }).then(r => r.json()).then(d => {
+                toast(d.message || '已删除');
+                if (selectedAddr === addr) {
+                    selectedAddr = null;
+                    document.getElementById('detailPanel').style.display = 'none';
+                    document.getElementById('noWalletSelected').style.display = 'block';
+                }
+                loadWallets();
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('newWalletModal').classList.remove('show');
+        }
+
+        function copyAddress() {
+            if (selectedAddr) navigator.clipboard.writeText(selectedAddr).then(() => toast('地址已复制'));
+        }
+
+        function viewJsonFile() {
+            if (!selectedAddr) return;
+            fetch('/api/wallet/' + selectedAddr).then(r => r.json()).then(w => {
+                document.getElementById('jsonFileName').textContent = 'wallets/' + selectedAddr + '.json';
+                document.getElementById('jsonContent').textContent = JSON.stringify(w, null, 2);
+                document.getElementById('jsonModal').classList.add('show');
+            });
+        }
+
+        function copyJson() {
+            navigator.clipboard.writeText(document.getElementById('jsonContent').textContent).then(() => toast('已复制'));
+        }
+
+        function buyEth() {
+            const amount = parseFloat(document.getElementById('buyUsdt').value);
+            if (!amount || amount <= 0) return toast('请输入有效数量', true);
+            fetch('/api/buy', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({address: selectedAddr, usdt_amount: amount})
+            }).then(r => r.json()).then(d => {
+                if (d.error) return toast(d.error, true);
+                toast(`买入 ${d.bought_eth} ETH`);
+                document.getElementById('buyUsdt').value = '';
+                loadWallets();
+            });
+        }
+
+        function sellEth() {
+            const amount = parseFloat(document.getElementById('sellEth').value);
+            if (!amount || amount <= 0) return toast('请输入有效数量', true);
+            fetch('/api/sell', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({address: selectedAddr, eth_amount: amount})
+            }).then(r => r.json()).then(d => {
+                if (d.error) return toast(d.error, true);
+                toast(`卖出 ${d.sold_eth} ETH，获得 ${d.earned_usdt} USDT`);
+                document.getElementById('sellEth').value = '';
+                loadWallets();
+            });
+        }
+
+        function doTransfer() {
+            const to = document.getElementById('transferTo').value.trim();
+            const amount = parseFloat(document.getElementById('transferAmount').value);
+            if (!to || !amount) return toast('请填写完整', true);
+            fetch('/api/transfer', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({from: selectedAddr, to: to, amount: amount})
+            }).then(r => r.json()).then(d => {
+                if (d.error) return toast(d.error, true);
+                toast('转账成功');
+                document.getElementById('transferTo').value = '';
+                document.getElementById('transferAmount').value = '';
+                loadWallets();
+            });
+        }
+
+        loadWallets();
+        setInterval(updatePrice, 5000);
+    </script>
+</body>
+</html>

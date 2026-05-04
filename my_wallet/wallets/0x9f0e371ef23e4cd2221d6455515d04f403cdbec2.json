@@ -1,0 +1,17 @@
+{
+  "address": "0x9f0e371ef23e4cd2221d6455515d04f403cdbec2",
+  "private_key": "0x88266910f37b210b2a9b6682ec7b1d6bb1ab9c7a7b5eda8da7254a28b8839563",
+  "usdt": 9900.0,
+  "eth": 0.033835,
+  "created_at": 1777052104546,
+  "transactions": [
+    {
+      "id": 1,
+      "type": "BUY",
+      "amount": 0.033835,
+      "price": 2955.53,
+      "cost": 100.0,
+      "time": 1777052141745
+    }
+  ]
+}
